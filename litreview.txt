@@ -1,0 +1,21 @@
+####### Papers on tsne ####### 
+
+# Papers about imporiving tsne empirically:
+
+- Optimizing t-SNE using random sampling techniques: focuses on how to best sample training data for tsne. Shows that other sampling techniques, rather than just random sampling, can be better in practice (for accuracy)
+
+- Accelerating t-SNE using Tree-Based Algorithms: Reduce the number of pairwise distances that need to be computed by using a 'sparse' approximation of the N by N distance matrix,i.e., only computes o(N^2) values. VERY popular paper. Implementation: https://github.com/DmitryUlyanov/Multicore-TSNE
+
+
+- T-SNE-CUDA: GPU-Accelerated T-SNE and its Applications to Modern Data: using gpu for speeding up tsne. There are a bunch of papers like this, such as using parallel implementations etc. See their related work here: https://arxiv.org/pdf/1807.11824.pdf
+
+
+# Between theory and practice:
+
+- Improving Stochastic Neighbour Embedding fundamentally with a well-defined data-dependent kernel: Basically, replace exp(-||xi-xj||^2) with K(xi, xj) where K is a kernal (more precisely, an isolation kernal). Computation of an isolation kernal seems hard (see page 8 of the paper here: https://arxiv.org/pdf/1906.09744.pdf). I also think a random projection preserves many things of the isolation kernal (small distances remain small, large remains large) so we might be able to use their results.
+
+# Theoretical papers about tsne:
+
+- An Analysis of the t-SNE Algorithm for Data Visualization: Show that if you project down to dim 2, data sets that are 'clusterable' in 2d stay clusterable. (They precisely define what it means to be clusterable/well separated). Definition is restrictive.
+
+- Clustering with t-SNE, Provably: Again work under the assumption that data is sufficiently clustered with their own definition. (see page 9 here: https://epubs.siam.org/doi/pdf/10.1137/18M1216134). 
