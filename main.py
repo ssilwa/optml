@@ -39,7 +39,7 @@ def get_fashion_mnist():
 		data = np.frombuffer(buf, dtype=np.uint8).astype(np.float32)
 		X = data.reshape(num_images, im_width * im_height)
 
-	with gzip.open('datasets/fastion-mnist/train-labels-idx1-ubyte.gz','r') as f:
+	with gzip.open('datasets/fashion-mnist/train-labels-idx1-ubyte.gz','r') as f:
 		f.read(8)
 		buf = f.read(num_images)
 		data = np.frombuffer(buf, dtype=np.uint8).astype(np.float32)
@@ -94,19 +94,22 @@ def plot(X_2d, y, num_classes):
 	plt.show()
 
 if __name__ == '__main__':
-	n, shape, X, y = get_mnist()
+	n, shape, X, y = get_fashion_mnist()
 	print(X.shape)
+
+	dim_reduce = False
 	
 	# reduce dimension of the data
-	X_new = do_random_projection(X, d=50)
-	print(X_new.shape)
-	X = X_new
+	if dim_reduce:
+		X_new = do_random_projection(X, d=50)
+		print(X_new.shape)
+		X = X_new
 	#############################
 	
 	dim = 2
 	# all 60k takes a while
 	# gets to 88% with n = 1k, 94% with n = 5k, and 95% with n = 10k (approximately)
-	n = 20000
+	n = 5000
 	print('n:', n)
 	X = X[:n]
 	y = y[:n]
