@@ -97,7 +97,7 @@ if __name__ == '__main__':
 	n, shape, X, y = get_fashion_mnist()
 	print(X.shape)
 
-	dim_reduce = False
+	dim_reduce = True
 	
 	# reduce dimension of the data
 	if dim_reduce:
