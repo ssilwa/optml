@@ -128,8 +128,8 @@ if __name__ == '__main__':
     dim_reduce = True
     # reduce dimension of the data
     if dim_reduce:
-        X_new = do_random_projection(X, d=50)
-        print('Reducing dim to:', X_new.shape)
+        X_new = do_random_projection(X, d=10)
+        print('Reducing dim to:', X_new.shape[1])
         X = X_new
     
     dim = 2
