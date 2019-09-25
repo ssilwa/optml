@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.manifold import TSNE as scipytsne
 from sklearn.metrics.pairwise import euclidean_distances
 from sklearn import random_projection
-#from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt
 from openTSNE import TSNE as opentsne
 from sklearn.neighbors import NearestNeighbors
 
@@ -123,12 +123,13 @@ def plot(X_2d, y, num_classes):
     plt.show()
 
 if __name__ == '__main__':
-    n, shape, X, y = get_mnist("fashion-mnist")
+
+    n, shape, X, y = get_mnist("mnist")
 
     dim_reduce = True
     # reduce dimension of the data
     if dim_reduce:
-        X_new = do_random_projection(X, d=10)
+        X_new = do_random_projection(X, d=100)
         print('Reducing dim to:', X_new.shape[1])
         X = X_new
     
