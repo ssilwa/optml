@@ -1,123 +1,78 @@
-import gzip, pickle, time, os
+import time
 import numpy as np
-from sklearn.manifold import TSNE
-# from MulticoreTSNE import MulticoreTSNE as TSNE
-# from openTSNE import TSNE
+import matplotlib.pyplot as plt
 
-from sklearn.metrics.pairwise import euclidean_distances
+import dataaccess
+
 from sklearn import random_projection
-from matplotlib import pyplot as plt
+from sklearn.metrics.pairwise import euclidean_distances
+from sklearn.neighbors import NearestNeighbors
 
-def get_mnist():
-    ''' returns number_of_images, shape_of_images, images, labels for mnist dataset '''
-    im_shape = im_width, im_height, channels = 28, 28, 1
-    num_images = 60000
-
-    with gzip.open('datasets/mnist/train-images-idx3-ubyte.gz','r') as f:
-        f.read(16)
-        buf = f.read(im_width * im_height * num_images)
-        data = np.frombuffer(buf, dtype=np.uint8).astype(np.float32)
-        X = data.reshape(num_images, im_width * im_height)
-
-    with gzip.open('datasets/mnist/train-labels-idx1-ubyte.gz','r') as f:
-        f.read(8)
-        buf = f.read(num_images)
-        data = np.frombuffer(buf, dtype=np.uint8).astype(np.float32)
-        y = data.flatten()
-
-    return num_images, im_shape, X, y
-
-def get_fashion_mnist():
-    ''' returns number_of_images, shape_of_images, images, labels for fashion mnist dataset '''
-    im_shape = im_width, im_height, channels = 28, 28, 1
-    num_images = 60000
-
-    with gzip.open('datasets/fashion-mnist/train-images-idx3-ubyte.gz','r') as f:
-        f.read(16)
-        buf = f.read(im_width * im_height * num_images)
-        data = np.frombuffer(buf, dtype=np.uint8).astype(np.float32)
-        X = data.reshape(num_images, im_width * im_height)
-
-    with gzip.open('datasets/fashion-mnist/train-labels-idx1-ubyte.gz','r') as f:
-        f.read(8)
-        buf = f.read(num_images)
-        data = np.frombuffer(buf, dtype=np.uint8).astype(np.float32)
-        y = data.flatten()
-
-    return num_images, im_shape, X, y
-
-def get_cifar10():
-    im_shape = im_width, im_height, channels = 32, 32, 3
-    num_images = 10000 * 5
-
-    def unpickle(file):
-        with open(file, 'rb') as fo:
-            d = pickle.load(fo, encoding='bytes')
-        return d
-
-    data_dir = 'datasets/cifar10/cifar-10-batches-py'
-
-    X = np.empty((0, im_width * im_height * 3), dtype=np.int)
-    y = np.empty(0, dtype=np.int)
-    for batch_num in range(1,6):
-        d = unpickle(os.path.join(data_dir,'data_batch_{}'.format(batch_num)))
-        X = np.vstack((X, d[b'data'  ]))
-        y = np.hstack((y, d[b'labels']))
-
-    return num_images, im_shape, X, y.flatten()
-
-def get_norb():
-    im_shape = im_width, im_height, channels = 96, 96, 1
-    num_images = 24300 * 2
-
-    with gzip.open('datasets/norb/smallnorb-5x46789x9x18x6x2x96x96-training-dat.mat.gz','r') as f:
-        f.read(24)
-        buf = f.read(im_width * im_height * num_images)
-        data = np.frombuffer(buf, dtype=np.uint8)
-        X = data.reshape(num_images, im_width * im_height)
-
-    with gzip.open('datasets/norb/smallnorb-5x46789x9x18x6x2x96x96-training-cat.mat.gz','r') as f:
-        f.read(8)
-        buf = f.read(num_images * 2)
-        data = np.frombuffer(buf, dtype=np.uint16)
-        y = data.flatten()
-
-    return num_images, im_shape, X, y    
+from sklearn.manifold import TSNE          as scipyTSNE
+from MulticoreTSNE    import MulticoreTSNE as multiTSNE
+from openTSNE         import TSNE          as openTSNE
 
 
-def do_random_projection(X, d):
-    ''' returns the data X after undergoing a random projection to dimension d'''
-    transformer = random_projection.GaussianRandomProjection(n_components = d)
-    X_new = transformer.fit_transform(X)
-    return X_new
+class TSNE:
+    ''' abstracts away from the multiple TSNE implementations
+        makes fit and fit_transform do the same thing
+        kind   -- open, multi, scipy
+        kwargs -- whatever you want to pass to your favoriate implementation of tsne
+    '''
+    def __init__(self, kind='open', **kwargs):
+        if   kind == 'open' : self.tsne = openTSNE(**kwargs)
+        elif kind == 'multi': self.tsne = multiTSNE(**kwargs)
+        elif kind == 'scipy': self.tsne = scipyTSNE(**kwargs)
+        else: raise Exception('TSNE type {} not recognized'.format(kind))
+        self.open = kind == 'open'
 
+    def fit(self, data):
+        if self.open: return self.tsne.fit(data)
+        else:         return self.tsne.fit_transform(data)
 
-def run(n, shape, X, y, tsne_dim = 2, verbose = True, showplot = False):
+    def fit_transform(self, data): return self.fit(data)
 
-    # tsne = TSNE(n_jobs=4)
-    tsne = TSNE(n_components = tsne_dim, method = 'barnes_hut' if tsne_dim<3 else 'exact')
-    # tsne = TSNE()
-
-    start = time.perf_counter()
-    data = tsne.fit_transform(X)
-    # data = tsne.fit(X)
-    if verbose : print('T-SNE -- dim: {}, time: {}s'.format(tsne_dim , time.perf_counter() - start))
-
-    # pairwise distances
-    D = euclidean_distances(data)
-    np.fill_diagonal(D, np.inf)
-
-    # index of nearest neighbors
-    argmin_value = D.argmin(axis=1)
+def nearest_neighbor_check(X, y):
+    ''' Given points X and labels y, returns the accuracy from checking label to nearest neighbor '''
+    
+    # nearest neighbor using ball trees
+    nbrs = NearestNeighbors(n_neighbors=2, algorithm='ball_tree').fit(X)
+    distances, indices = nbrs.kneighbors(X)
+    
+    # get the second nearest neighbor since the first is the point itself
+    indices = indices[:,1]
 
     # predicted values
-    pred_y = y[argmin_value]
+    pred_y = y[indices]
 
     # number of correct predictions
     correct = (pred_y == y).sum()
 
     # accuracy
-    acc = correct / n
+    acc = correct / len(y)
+
+    return acc
+
+def do_random_projection(X, d):
+    ''' returns the data X after undergoing a random projection to dimension d'''
+
+    transformer = random_projection.GaussianRandomProjection(n_components = d)
+    X_new = transformer.fit_transform(X)
+    return X_new
+
+
+def run(kind, n, shape, X, y, tsne_dim = 2, verbose = True, showplot = False):
+    ''' run tsne using scipy implementation'''
+
+    tsne = TSNE(kind, n_components = tsne_dim, method = 'barnes_hut' if tsne_dim<3 else 'exact')
+
+    start = time.perf_counter()
+    data = tsne.fit_transform(X)
+
+    if verbose : print('T-SNE ({}) -- dim: {}, time: {}s'.format(kind, tsne_dim , time.perf_counter() - start))
+
+    # get accuracy using label of nearest neighbor
+    acc = nearest_neighbor_check(data, y)
 
     if verbose : print('Accuracy:',acc)
     if showplot : plot(data, y, 10)
@@ -133,23 +88,73 @@ def plot(X_2d, y, num_classes):
 
     plt.show()
 
+class Trial:
+    '''
+        datasets   -- mnist, kmnist, fashion-mnist, cifar10, norb
+        tsne_kind  -- scipy, multi, open
+        n          -- specify if you only want to use a subset of n images
+        tsne_dim   -- dim of tsne, default is 2
+        dim_reduce -- specify randomly reduce initial data to this many dimensions
+        verbose    -- print stuff along the way
+        buf        -- write results to buffer
+    '''
+    def __init__(self, dataset, tsne_kind='open', n=None, tsne_dim=2, dim_reduce=None, verbose=True, buf=None):
+        # get correct dataset
+        if verbose: print('Loading dataset', dataset)
+        if 'mnist' in dataset:
+            get_dataset = lambda : dataaccess.get_mnist(dataset)
+        elif dataset == 'cifar10':
+            get_dataset = dataaccess.get_cifar10
+        elif dataset == 'norb':
+            get_dataset = dataaccess.get_norb
+        else : raise Error('Dataset {} not recognized'.format(dataset))
+
+        default_n, shape, X, y = get_dataset()
+
+        # possibly trim dataset
+        n = n or default_n
+        X = X[:n]
+        y = y[:n]
+
+        # possibly reduce dataset
+        if dim_reduce:
+            X_new = do_random_projection(X, d=dim_reduce)
+            X = X_new
+
+        if verbose: print('(# examples, dim) =', X.shape)
+
+        self.X = X
+        self.y = y
+
+        self.tsne_dim = tsne_dim
+        self.tsne_kind = tsne_kind
+        self.tsne = TSNE(self.tsne_kind, n_components = self.tsne_dim)
+
+        self.verbose = verbose
+        self.buf     = buf
+
+    def run(self):
+        start = time.perf_counter()
+        if self.verbose : print('> Running TSNE ({}).....'.format(self.tsne_kind),end='\r')        
+        data = self.tsne.fit_transform(self.X)
+
+        if self.verbose : print('T-SNE ({}) -- dim: {}, time: {}s'.format(self.tsne_kind, self.tsne_dim , time.perf_counter() - start))
+
+        # get accuracy using label of nearest neighbor
+        acc = nearest_neighbor_check(data, self.y)
+
+        if self.verbose : print('Accuracy:',acc)
+        return acc
+
 if __name__ == '__main__':
-    n, shape, X, y = get_norb()
 
-    dim_reduce = False
-    # reduce dimension of the data
-    if dim_reduce:
-        X_new = do_random_projection(X, d=300)
-        print(X_new.shape)
-        X = X_new
-    
-    dim = 2
-    # all 60k takes a while
-    # gets to 88% with n = 1k, 94% with n = 5k, and 95% with n = 10k (approximately)
-    n = 1000
-    print('n:', n)
-    X = X[:n]
-    y = y[:n]
+    Trial(
 
-    accuracy = run(n, shape, X, y, dim, showplot = False)
-    print('Accuracy:',accuracy)
+        'cifar10',
+
+        tsne_kind='scipy',
+        dim_reduce = 30,
+        n=1000,
+
+        ).run()
+
