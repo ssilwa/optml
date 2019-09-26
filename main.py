@@ -1,6 +1,9 @@
 import gzip, pickle, time, os
 import numpy as np
 from sklearn.manifold import TSNE
+# from MulticoreTSNE import MulticoreTSNE as TSNE
+# from openTSNE import TSNE
+
 from sklearn.metrics.pairwise import euclidean_distances
 from sklearn import random_projection
 from matplotlib import pyplot as plt
@@ -63,6 +66,25 @@ def get_cifar10():
 
     return num_images, im_shape, X, y.flatten()
 
+def get_norb():
+    im_shape = im_width, im_height, channels = 96, 96, 1
+    num_images = 24300 * 2
+
+    with gzip.open('datasets/norb/smallnorb-5x46789x9x18x6x2x96x96-training-dat.mat.gz','r') as f:
+        f.read(24)
+        buf = f.read(im_width * im_height * num_images)
+        data = np.frombuffer(buf, dtype=np.uint8)
+        X = data.reshape(num_images, im_width * im_height)
+
+    with gzip.open('datasets/norb/smallnorb-5x46789x9x18x6x2x96x96-training-cat.mat.gz','r') as f:
+        f.read(8)
+        buf = f.read(num_images * 2)
+        data = np.frombuffer(buf, dtype=np.uint16)
+        y = data.flatten()
+
+    return num_images, im_shape, X, y    
+
+
 def do_random_projection(X, d):
     ''' returns the data X after undergoing a random projection to dimension d'''
     transformer = random_projection.GaussianRandomProjection(n_components = d)
@@ -72,11 +94,14 @@ def do_random_projection(X, d):
 
 def run(n, shape, X, y, tsne_dim = 2, verbose = True, showplot = False):
 
-    tsne = TSNE(n_components=tsne_dim, random_state=0, method = 'barnes_hut' if tsne_dim < 3 else 'exact')
+    # tsne = TSNE(n_jobs=4)
+    tsne = TSNE(n_components = tsne_dim, method = 'barnes_hut' if tsne_dim<3 else 'exact')
+    # tsne = TSNE()
 
-    start = time.clock()
+    start = time.perf_counter()
     data = tsne.fit_transform(X)
-    if verbose : print('T-SNE -- dim: {}, time: {}s'.format(tsne_dim , time.clock() - start))
+    # data = tsne.fit(X)
+    if verbose : print('T-SNE -- dim: {}, time: {}s'.format(tsne_dim , time.perf_counter() - start))
 
     # pairwise distances
     D = euclidean_distances(data)
@@ -109,12 +134,12 @@ def plot(X_2d, y, num_classes):
     plt.show()
 
 if __name__ == '__main__':
-    n, shape, X, y = get_cifar10()
+    n, shape, X, y = get_norb()
 
     dim_reduce = False
     # reduce dimension of the data
     if dim_reduce:
-        X_new = do_random_projection(X, d=50)
+        X_new = do_random_projection(X, d=300)
         print(X_new.shape)
         X = X_new
     
