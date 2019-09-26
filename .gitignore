@@ -1,4 +1,4 @@
 *.gz
-datasets/
-__pycache__/
+datasets/*
+__pycache__/*
 *.mat*

@@ -9,8 +9,8 @@ from sklearn.metrics.pairwise import euclidean_distances
 from sklearn.neighbors import NearestNeighbors
 
 from sklearn.manifold import TSNE          as scipyTSNE
-from MulticoreTSNE    import MulticoreTSNE as multiTSNE
-from openTSNE         import TSNE          as openTSNE
+# from MulticoreTSNE    import MulticoreTSNE as multiTSNE
+# from openTSNE         import TSNE          as openTSNE
 
 
 class TSNE:
@@ -20,8 +20,8 @@ class TSNE:
         kwargs -- whatever you want to pass to your favoriate implementation of tsne
     '''
     def __init__(self, kind='open', **kwargs):
-        if kind == 'open' : self.tsne = openTSNE(**kwargs)
-        if kind == 'multi': self.tsne = multiTSNE(**kwargs)
+        # if kind == 'open' : self.tsne = openTSNE(**kwargs)
+        # if kind == 'multi': self.tsne = multiTSNE(**kwargs)
         if kind == 'scipy': self.tsne = scipyTSNE(**kwargs)
         else: raise Exception('TSNE type {} not recognized'.format(kind))
         self.open = kind == 'open'
@@ -119,20 +119,21 @@ class Trial:
         if self.verbose : print('> Running TSNE ({}).....'.format(self.tsne_kind),end='\r')        
         data = self.tsne.fit_transform(self.X)
 
-        if self.verbose : print('T-SNE ({}) -- dim: {}, time: {}s'.format(self.tsne_kind, self.tsne_dim , time.perf_counter() - start))
+        timer = time.perf_counter() - start
+        if self.verbose : print('T-SNE ({}) -- dim: {}, time: {}s'.format(self.tsne_kind, self.tsne_dim , timer))
 
         # get accuracy using label of nearest neighbor
         acc = nearest_neighbor_check(data, self.y)
 
         if self.verbose : print('Accuracy:',acc)
-        return acc
+        return (acc, timer)
 
-if __name__ == '__main__':
+def MAIN():
 
-    for d in range(50, 96*96+1, 50):
-        for n in range(1000, 50000, 1000):
+    for d in range(96*96, 50, -500):
+        for n in range(10000, 50000, 2000):
             try:
-                acc = Trial(
+                (acc, t) = Trial(
 
                     'norb',
 
@@ -142,6 +143,8 @@ if __name__ == '__main__':
                     verbose = False
                     ).run()
 
-                print('n:',n,'d:',d,'acc:',acc)
-            except:
-                break
+                print('n:',n,'d:',d,'acc:',acc,'t:',t)
+            except Exception as e:
+                print(e)
+
+if __name__ == '__main__': MAIN()
