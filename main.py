@@ -20,9 +20,9 @@ class TSNE:
         kwargs -- whatever you want to pass to your favoriate implementation of tsne
     '''
     def __init__(self, kind='open', **kwargs):
-        if   kind == 'open' : self.tsne = openTSNE(**kwargs)
-        elif kind == 'multi': self.tsne = multiTSNE(**kwargs)
-        elif kind == 'scipy': self.tsne = scipyTSNE(**kwargs)
+        if kind == 'open' : self.tsne = openTSNE(**kwargs)
+        if kind == 'multi': self.tsne = multiTSNE(**kwargs)
+        if kind == 'scipy': self.tsne = scipyTSNE(**kwargs)
         else: raise Exception('TSNE type {} not recognized'.format(kind))
         self.open = kind == 'open'
 
@@ -59,25 +59,6 @@ def do_random_projection(X, d):
     transformer = random_projection.GaussianRandomProjection(n_components = d)
     X_new = transformer.fit_transform(X)
     return X_new
-
-
-def run(kind, n, shape, X, y, tsne_dim = 2, verbose = True, showplot = False):
-    ''' run tsne using scipy implementation'''
-
-    tsne = TSNE(kind, n_components = tsne_dim, method = 'barnes_hut' if tsne_dim<3 else 'exact')
-
-    start = time.perf_counter()
-    data = tsne.fit_transform(X)
-
-    if verbose : print('T-SNE ({}) -- dim: {}, time: {}s'.format(kind, tsne_dim , time.perf_counter() - start))
-
-    # get accuracy using label of nearest neighbor
-    acc = nearest_neighbor_check(data, y)
-
-    if verbose : print('Accuracy:',acc)
-    if showplot : plot(data, y, 10)
-
-    return acc
 
 def plot(X_2d, y, num_classes):    
     # add more colors if num_classes > 10
@@ -148,13 +129,19 @@ class Trial:
 
 if __name__ == '__main__':
 
-    Trial(
+    for d in range(50, 96*96+1, 50):
+        for n in range(1000, 50000, 1000):
+            try:
+                acc = Trial(
 
-        'cifar10',
+                    'norb',
 
-        tsne_kind='scipy',
-        dim_reduce = 30,
-        n=1000,
+                    tsne_kind='scipy',
+                    dim_reduce = d,
+                    n = n,
+                    verbose = False
+                    ).run()
 
-        ).run()
-
+                print('n:',n,'d:',d,'acc:',acc)
+            except:
+                break
