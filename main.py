@@ -60,7 +60,7 @@ def do_random_projection(X, d):
     X_new = transformer.fit_transform(X)
     return X_new
 
-def plot(X_2d, y, num_classes):    
+def plot(X_2d, y, num_classes = 10):    
     # add more colors if num_classes > 10
     colors = ['r', 'g', 'b', 'c', 'm', 'y', 'r', 'w', 'orange', 'purple']
 
@@ -125,41 +125,60 @@ class Trial:
         # get accuracy using label of nearest neighbor
         acc = nearest_neighbor_check(data, self.y)
 
-        if self.verbose : print('Accuracy:',acc)
+        if self.verbose : print('Accuracy:',acc); plot(data, self.y);
         return (acc, timer)
 
 def MAIN():
 
-    d_vals_mnist = [7,22,27,25,38,57,86,129,194,291,437,656, None]
-    d_vals_norb = [7, 11, 17, 25, 38, 57, 86, 129, 194, 291, 437, 656, 985, 1477, 2216, 3325, 4987, 7481, None]
+    d = 38
+    (acc, t) = Trial(
+        'mnist',
+        tsne_kind='scipy',
+        dim_reduce = d,
+        verbose = True,
+        n = 500,
+        ).run()
 
-    for dataset in ['mnist','kmnist','fashion-mnist']:
-        for d in d_vals_mnist[::2]:
-            try:
-                (acc, t) = Trial(
-                    dataset,
-                    tsne_kind='scipy',
-                    dim_reduce = d,
-                    verbose = False
-                    ).run()
+    print('norb','d:',d,'acc:',acc,'t:',t)
 
-                print(dataset,'d:',d,'acc:',acc,'t:',t)
-            except Exception as e:
-                print(e)
+    # d_vals_mnist = [7,22,27,25,38,57,86,129,194,291,437,656, None]
+    # d_vals_norb = [7, 11, 17, 25, 38, 57, 86, 129, 194, 291, 437, 656, 985, 1477, 2216, 3325, 4987, 7481, None]
 
-    for d in d_vals_norb[::2]:
-        try:
-            (acc, t) = Trial(
-                'norb',
-                tsne_kind='scipy',
-                dim_reduce = d,
-                verbose = False
-                ).run()
+    # for dataset in ['mnist','kmnist','fashion-mnist']:
+    #     for d in d_vals_mnist[::2]:
+    #         try:
+    #             (acc, t) = Trial(
+    #                 dataset,
+    #                 tsne_kind='scipy',
+    #                 dim_reduce = d,
+    #                 verbose = False
+    #                 ).run()
 
-            print('norb','d:',d,'acc:',acc,'t:',t)
-        except Exception as e:
-            print(e)
+    #             print(dataset,'d:',d,'acc:',acc,'t:',t)
+    #         except Exception as e:
+    #             print(e)
 
+    # for d in d_vals_norb[::2]:
+    #     try:
+    #         (acc, t) = Trial(
+    #             'norb',
+    #             tsne_kind='scipy',
+    #             dim_reduce = d,
+    #             verbose = False
+    #             ).run()
+
+    #         print('norb','d:',d,'acc:',acc,'t:',t)
+    #     except Exception as e:
+    #         print(e)
+    # d = None
+    # (acc, t) = Trial(
+    #     'norb',
+    #     tsne_kind='scipy',
+    #     dim_reduce = d,
+    #     verbose = True
+    #     ).run()
+
+    # print('norb','d:',d,'acc:',acc,'t:',t)
 
     # for d in range(96*96, 50, -500):
     #     for n in range(10000, 50000, 2000):
